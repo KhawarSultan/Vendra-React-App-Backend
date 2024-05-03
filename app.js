@@ -58,28 +58,28 @@ const hCaptchaSecretKey = 'ES_3ba2d09655a84c25a99e64f3a7e1e8cc';
 //     res.status(400).json({ error: 'hCaptcha verification failed' });
 //   }
 // };
-const verifyHCaptcha = async (req, res, next) => {
-  try {
-    const hCaptchaToken = req.body.hCaptchaToken;
-    console.log('hCaptcha Token:', hCaptchaToken);
+// const verifyHCaptcha = async (req, res, next) => {
+//   try {
+//     const hCaptchaToken = req.body.hCaptchaToken;
+//     console.log('hCaptcha Token:', hCaptchaToken);
 
-    // Verify hCaptcha token
-    const result = await hCaptcha.verify(hCaptchaSecretKey, hCaptchaToken);
+//     // Verify hCaptcha token
+//     const result = await hCaptcha.verify(hCaptchaSecretKey, hCaptchaToken);
 
-    console.log('hCaptcha Verification Result:', result);
+//     console.log('hCaptcha Verification Result:', result);
 
-    if (result.success) {
-      // If verification is successful, move to the next middleware (or route handler)
-      next();
-    } else {
-      console.error('hCaptcha verification failed:', result);
-      res.status(400).json({ status: 'error', error: 'hCaptcha verification failed' });
-     }
-  } catch (error) {
-    console.error('hCaptcha verification failed:', error);
-    res.status(400).json({ status: 'error', error: 'hCaptcha verification failed' });
-    }
-};
+//     if (result.success) {
+//       // If verification is successful, move to the next middleware (or route handler)
+//       next();
+//     } else {
+//       console.error('hCaptcha verification failed:', result);
+//       res.status(400).json({ status: 'error', error: 'hCaptcha verification failed' });
+//      }
+//   } catch (error) {
+//     console.error('hCaptcha verification failed:', error);
+//     res.status(400).json({ status: 'error', error: 'hCaptcha verification failed' });
+//     }
+// };
 
 // const verifyHCaptcha = async (req, res, next) => {
 //   try {
@@ -101,8 +101,8 @@ const verifyHCaptcha = async (req, res, next) => {
 //   }
 // };
 
-app.post("/register",  verifyHCaptcha, async (req, res) => {
-  const { username, email, password } = req.body;
+app.post("/register", async (req, res) => {
+  const { username, email, password , role } = req.body;
   const encryptedpassword = await bcrypt.hash(password,10);
   // const password1 = await (password,10);
 
@@ -116,6 +116,7 @@ app.post("/register",  verifyHCaptcha, async (req, res) => {
       email,
       //password,
       password:encryptedpassword,
+      role: role || "user",
     });
     res.send({ status: "ok Successfully Registered" });
   } catch (error) {
@@ -128,7 +129,7 @@ app.post("/register",  verifyHCaptcha, async (req, res) => {
 //   const adminUsernames = ["rayan", "superadmin"];
 //   return adminUsernames.includes(user.username);
 // }
-app.post("/login-user" , verifyHCaptcha, async (req, res) => {
+app.post("/login-user" , async (req, res) => {
   const { username, password } = req.body;
 
   if (username === "admin" && password === "admin123") {
@@ -141,7 +142,7 @@ app.post("/login-user" , verifyHCaptcha, async (req, res) => {
     };
 
     const token = jwt.sign(tokenData, JWT_SECRET, {
-      expiresIn: "15m",
+      expiresIn: "60m",
     });
 
     return res.json({ status: "ok", data: token, role: "admin" });
@@ -158,6 +159,7 @@ app.post("/login-user" , verifyHCaptcha, async (req, res) => {
     const tokenData = {
       email: user.email,
       username: user.username,
+      role: user.role, // Include the user's role in the JWT payload
       // Add other user details as needed
     };
 
@@ -165,7 +167,7 @@ app.post("/login-user" , verifyHCaptcha, async (req, res) => {
       expiresIn: 60*60,
     });
 
-    return res.json({ status: "ok", data: token, role: "user" });
+    return res.json({ status: "ok", data: token,  role: user.role });
   }
 
   return res.json({ status: "error", error: "Invalid Password" });

@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const register = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password,role } = req.body;
  const encryptedpassword = await bcrypt.hash(password, 10);
   // const password1 = await (password,10);
 
@@ -39,6 +39,7 @@ const login = async (req, res) => {
     const tokenData = {
       email: vendor.email,
       username: vendor.username,
+      
       // Add other vendor details as needed
     };
 

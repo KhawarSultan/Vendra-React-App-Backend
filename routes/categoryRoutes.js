@@ -23,7 +23,7 @@ const Category = require('../models/Category');
 //   try {
 //     const { name } = req.body;
 //     let image = req.file ? req.file.path : 'image is not uploaded';
-    
+
 //     // Replace backslashes with forward slashes in the image path
 //     image = image.replace(/\\/g, '/');
 
@@ -77,5 +77,23 @@ router.get('/categories', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+router.post("/deleteCategory", async (req, res) => {
+  const { categoryId } = req.body;
+  try {
+    const result = await Category.deleteOne({ _id: categoryId });
+    if (result.deletedCount === 1) {
+      console.log("Category deleted successfully");
+      res.send({ status: "Ok", data: "Deleted" });
+    } else {
+      console.log("Category not found");
+      res.status(404).send({ status: "Error", data: "Category not found" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ status: "Error", data: "Failed to delete Category" });
+  }
+});
+
 
 module.exports = router;

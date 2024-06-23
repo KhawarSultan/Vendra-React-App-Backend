@@ -1,17 +1,21 @@
 const express = require("express");
 const app = express();
 const router = express.Router();
-const path = require('path'); // Import the path module
-const hCaptcha = require('hcaptcha');
+const path = require("path"); // Import the path module
+const hCaptcha = require("hcaptcha");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const bcrypt = require('bcryptjs');
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const bodyParser = require('body-parser');
-const JWT_SECRET ='hvdvay6ert72839289()aiyg8t87qt72393293883uhefiuh78ttq3ifi78272jbkj?[]]pou89ywe';
+const bodyParser = require("body-parser");
+const JWT_SECRET =
+  "hvdvay6ert72839289()aiyg8t87qt72393293883uhefiuh78ttq3ifi78272jbkj?[]]pou89ywe";
 const mongoUrl = process.env.DATABASE_URL;
-app.use(express.static('uploads'));
+const stripe = require("stripe")(
+  "sk_test_51PUpYhIHfGUjY2IsRz1LegNxMd7yk9aMuZL6xQu5SV4QYYuQ6tY1LzHFoDYn150cP5OIIuamigT1coEcr8pl2EHw00x4VczKZB"
+);
+app.use(express.static("uploads"));
 // Connect to the MongoDB database using the DATABASE_URL environment variable
 mongoose
   .connect(process.env.DATABASE_URL, {
@@ -39,9 +43,7 @@ app.use(express.json());
 require("./userdetails");
 const User = mongoose.model("UserInfo");
 
-
-
-const hCaptchaSecretKey = 'ES_3ba2d09655a84c25a99e64f3a7e1e8cc';
+const hCaptchaSecretKey = "ES_3ba2d09655a84c25a99e64f3a7e1e8cc";
 
 // const verifyHCaptcha = async (req, res, next) => {
 //   const hCaptchaToken = req.body.hCaptchaToken;
@@ -102,8 +104,8 @@ const hCaptchaSecretKey = 'ES_3ba2d09655a84c25a99e64f3a7e1e8cc';
 // };
 
 app.post("/register", async (req, res) => {
-  const { username, email, password , role } = req.body;
-  const encryptedpassword = await bcrypt.hash(password,10);
+  const { username, email, password, role } = req.body;
+  const encryptedpassword = await bcrypt.hash(password, 10);
   // const password1 = await (password,10);
 
   try {
@@ -115,7 +117,7 @@ app.post("/register", async (req, res) => {
       username,
       email,
       //password,
-      password:encryptedpassword,
+      password: encryptedpassword,
       role: role || "user",
     });
     res.send({ status: "ok Successfully Registered" });
@@ -129,15 +131,15 @@ app.post("/register", async (req, res) => {
 //   const adminUsernames = ["rayan", "superadmin"];
 //   return adminUsernames.includes(user.username);
 // }
-app.post("/login-user" , async (req, res) => {
+app.post("/login-user", async (req, res) => {
   const { username, password } = req.body;
 
   if (username === "admin" && password === "admin123") {
     // If the credentials match, send a token and set the role to "admin"
     const tokenData = {
       username: "admin",
-      email:"admin@gmail.com",
-      passowoord:"123",
+      email: "admin@gmail.com",
+      passowoord: "123",
       role: "admin",
     };
 
@@ -153,7 +155,7 @@ app.post("/login-user" , async (req, res) => {
     return res.json({ error: "User Not found" });
   }
 
- if (await bcrypt.compare(password, user.password)) {
+  if (await bcrypt.compare(password, user.password)) {
     // if (await (password, user.password)) {
 
     const tokenData = {
@@ -164,10 +166,10 @@ app.post("/login-user" , async (req, res) => {
     };
 
     const token = jwt.sign(tokenData, JWT_SECRET, {
-      expiresIn: 60*60,
+      expiresIn: 60 * 60,
     });
 
-    return res.json({ status: "ok", data: token,  role: user.role });
+    return res.json({ status: "ok", data: token, role: user.role });
   }
 
   return res.json({ status: "error", error: "Invalid Password" });
@@ -210,47 +212,49 @@ app.post("/login-user" , async (req, res) => {
 //     return res.json({ email, name });
 //   });
 // });
-app.get('/data', async (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-console.log("tokendata ",token)
+app.get("/data", async (req, res) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  console.log("tokendata ", token);
   if (!token) {
-    return res.status(401).json({ error: 'Unauthorized - Missing Token' });
+    return res.status(401).json({ error: "Unauthorized - Missing Token" });
   }
 
   try {
     // Verify the JWT token
-    const decodedToken = jwt.verify(token, 'hvdvay6ert72839289()aiyg8t87qt72393293883uhefiuh78ttq3ifi78272jbkj?[]]pou89ywe');
+    const decodedToken = jwt.verify(
+      token,
+      "hvdvay6ert72839289()aiyg8t87qt72393293883uhefiuh78ttq3ifi78272jbkj?[]]pou89ywe"
+    );
     const userEmail = decodedToken.email || decodedToken.username; // Depending on your user model
 
     console.log("Decoded Token:", decodedToken);
     console.log("User Email:", userEmail);
 
     // Retrieve user data based on the email
-    const user = { email: userEmail, }; // You may fetch the actual user data from your database
+    const user = { email: userEmail }; // You may fetch the actual user data from your database
 
     console.log("User:", user);
 
     if (!user.email) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
     const responseUser = { email: user.email, name: user.name };
     return res.json(responseUser);
 
     return res.json(user);
   } catch (error) {
-    console.error('Error decoding token:', error);
-    return res.status(401).json({ error: 'Unauthorized - Invalid Token' });
+    console.error("Error decoding token:", error);
+    return res.status(401).json({ error: "Unauthorized - Invalid Token" });
   }
 });
 
-
- // if (password === user.password) {
-  //   const token = jwt.sign({}, JWT_SECRET);
-  //   return res.json({ status: "ok login Succesfully", data: token });
-  // } else {
-  //   return res.json({ status: "error", error: "Password incorrect" });
-  // }
-  //Compare the entered password with the user's hashed password
+// if (password === user.password) {
+//   const token = jwt.sign({}, JWT_SECRET);
+//   return res.json({ status: "ok login Succesfully", data: token });
+// } else {
+//   return res.json({ status: "error", error: "Password incorrect" });
+// }
+//Compare the entered password with the user's hashed password
 app.post("/Rightbar", async (req, res) => {
   const { token } = req.body;
   try {
@@ -297,10 +301,7 @@ app.post("/deleteUser", async (req, res) => {
   }
 });
 
-
-
-
-router.post('/categories', async (req, res) => {
+router.post("/categories", async (req, res) => {
   try {
     const newCategory = new Category(req.body);
     await newCategory.save(); // This line saves the category to the database
@@ -308,11 +309,9 @@ router.post('/categories', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
- });
+});
 
-
-
-//admin approval api 
+//admin approval api
 app.post("/admin/approve-vendor", async (req, res) => {
   const { userId } = req.body;
 
@@ -328,15 +327,11 @@ app.post("/admin/approve-vendor", async (req, res) => {
     return res.json({ status: "ok", message: "Vendor approved successfully" });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ status: "error", error: "Failed to approve vendor" });
+    return res
+      .status(500)
+      .json({ status: "error", error: "Failed to approve vendor" });
   }
 });
-
-
-
-
-
-
 
 // app.post("/post",async(req,res)=>{
 //     console.log(req.body);
@@ -376,16 +371,34 @@ app.post("/admin/approve-vendor", async (req, res) => {
 //     }
 // });
 // app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.post("/api/payment-intent", async (req, res) => {
+  const { paymentMethodId, amount, currency, description, metadata } = req.body;
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency,
+      payment_method: paymentMethodId,
+      description,
+      metadata,
+      confirm: true,
+    });
+    res.status(200).send({ clientSecret: paymentIntent.client_secret });
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+});
 app.use(bodyParser.json());
-const categoryRouter = require('./routes/categoryRoutes');
-app.use('/api', categoryRouter);
-const productRouter = require('./routes/productRoutes');
-app.use('/api', productRouter); // Move this line below the categoryRouter definition
-const orderRoutes = require('./routes/orderRoutes');
-app.use('/api', orderRoutes);
-const contactRoutes = require('./routes/contactRoutes');
-app.use('/api/contact', contactRoutes);
-const vendorRoutes = require('./routes/vendorRoutes');
-app.use('/api/vendor', vendorRoutes);
-const reviewsRouter = require('./routes/reviewRoutes');
-app.use('/api', reviewsRouter);
+const categoryRouter = require("./routes/categoryRoutes");
+app.use("/api", categoryRouter);
+const productRouter = require("./routes/productRoutes");
+app.use("/api", productRouter); // Move this line below the categoryRouter definition
+const orderRoutes = require("./routes/orderRoutes");
+app.use("/api", orderRoutes);
+const contactRoutes = require("./routes/contactRoutes");
+app.use("/api/contact", contactRoutes);
+const vendorRoutes = require("./routes/vendorRoutes");
+app.use("/api/vendor", vendorRoutes);
+const reviewsRouter = require("./routes/reviewRoutes");
+app.use("/api", reviewsRouter);
